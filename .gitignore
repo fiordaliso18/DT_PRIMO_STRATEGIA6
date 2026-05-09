@@ -1,0 +1,19 @@
+# Python virtual environments / Ambienti virtuali Python
+.venv*/
+venv*/
+__pycache__/
+*.pyc
+*.pyo
+
+# MQL5 compiled binaries / Binari compilati MQL5
+*.ex5
+*.ex4
+
+# OS / Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / Editor
+.idea/
+*.swp
