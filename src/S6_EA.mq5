@@ -123,8 +123,38 @@ bool ClosePosition(string reason)
 //================================================================
 double CalculateLots()
 {
-   // stub — Story 2.1
-   return 0.0;
+   double slPrice  = SymbolInfoDouble(_Symbol, SYMBOL_ASK) * (1.0 - SL_Percent / 100.0);
+   double slPoints = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) - slPrice)
+                     / SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
+   double tickSize  = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+   double volStep   = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+   double volMin    = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   double volMax    = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+
+   if(slPoints <= 0 || tickValue <= 0 || tickSize <= 0 || volStep <= 0)
+   {
+      LogEvent("ERROR | CalculateLots: invalid symbol data");
+      return 0.0;
+   }
+
+   double riskAmount = AccountInfoDouble(ACCOUNT_BALANCE) * RiskPercent / 100.0;
+   double rawLots    = riskAmount / (slPoints * tickValue / tickSize);
+   double lots       = MathFloor(rawLots / volStep) * volStep;
+
+   if(lots < volMin)
+   {
+      LogEvent("SKIP | Lots " + DoubleToString(lots, 2) +
+               " below broker minimum " + DoubleToString(volMin, 2));
+      return 0.0;
+   }
+   if(lots > volMax)
+   {
+      lots = volMax;
+      LogEvent("INFO | Lots capped at broker maximum " + DoubleToString(volMax, 2));
+   }
+
+   return lots;
 }
 
 //================================================================
