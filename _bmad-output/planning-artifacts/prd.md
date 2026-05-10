@@ -329,6 +329,8 @@ Problem-solving MVP: an EA that runs S6 in backtest with verifiable results and 
 - **FR35:** The EA suppresses duplicate trade entries when a position already exists after restart
 - **FR36:** The EA executes correctly in MT5 Strategy Tester "Open Prices Only" mode
 - **FR37:** The EA operates without external DLL dependencies or files required at runtime
+- **FR38:** The EA writes a performance summary row (timestamp, total trades, win rate, profit factor, max drawdown, average duration) to `S6_report.csv` on every periodic snapshot and at final report *(Phase 2)*
+- **FR39:** The EA sends a push notification to the MT5 mobile app on every position close, containing exit reason and P&L; failures are logged without stopping the EA *(Phase 2)*
 
 ---
 
