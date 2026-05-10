@@ -22,6 +22,7 @@ input bool   EnablePhase2   = false;      // Enable Phase 2 features
 //  GLOBAL STATE
 //================================================================
 datetime lastBarTime = 0;
+datetime entryTime   = 0;    // orario apertura posizione corrente (per MaxDays)
 double   equityHigh  = 0.0;
 int      totalTrades = 0;
 int      winTrades   = 0;
@@ -86,19 +87,60 @@ bool ReadIndicators()
 
 bool HasOpenPosition()
 {
-   // stub — Story 2.3
+   for(int i = 0; i < PositionsTotal(); i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 &&
+         PositionGetString(POSITION_SYMBOL) == _Symbol &&
+         PositionGetInteger(POSITION_MAGIC)  == MagicNumber)
+         return true;
+   }
    return false;
 }
 
+
 bool CheckEntryConditions()
 {
-   // stub — Story 2.3
-   return false;
+   if(HasOpenPosition()) return false;
+
+   double closePrice = iClose(_Symbol, PERIOD_D1, 1);
+   if(closePrice <= g_smaValue)  return false;
+   if(g_rsiValue  >= RSI_Entry)  return false;
+
+   LogEvent("SIGNAL | Entry conditions met" +
+            " | Close: " + DoubleToString(closePrice, _Digits) +
+            " SMA: "      + DoubleToString(g_smaValue, _Digits) +
+            " RSI: "      + DoubleToString(g_rsiValue, 2));
+
+   if(OpenPosition())
+   {
+      entryTime = TimeCurrent();
+      totalTrades++;
+   }
+   return true;
 }
 
 bool CheckExitConditions()
 {
-   // stub — Story 2.3
+   if(!HasOpenPosition()) return false;
+
+   if(g_rsiValue > RSI_Exit)
+   {
+      ClosePosition("RSI_EXIT");
+      return true;
+   }
+
+   if(entryTime > 0)
+   {
+      int daysOpen = (int)((TimeCurrent() - entryTime) / 86400);
+      if(daysOpen >= MaxDays)
+      {
+         LogEvent("INFO | Timeout | Days open: " + (string)daysOpen);
+         ClosePosition("TIMEOUT");
+         return true;
+      }
+   }
+
    return false;
 }
 
