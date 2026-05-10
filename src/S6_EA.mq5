@@ -328,6 +328,21 @@ int OnInit()
       return INIT_FAILED;
    }
 
+   // Restart recovery: scansiona posizioni aperte per MagicNumber
+   for(int i = 0; i < PositionsTotal(); i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 &&
+         PositionGetString(POSITION_SYMBOL) == _Symbol &&
+         PositionGetInteger(POSITION_MAGIC)  == MagicNumber)
+      {
+         entryTime = (datetime)PositionGetInteger(POSITION_TIME);
+         LogEvent("RECOVERY | Posizione esistente rilevata | Ticket: " + (string)ticket +
+                  " | Aperta: " + TimeToString(entryTime));
+         break;
+      }
+   }
+
    LogEvent("EA initialized | MagicNumber: " + (string)MagicNumber +
             " | SMA(" + (string)SMA_Period + ") RSI(" + (string)RSI_Period + ")" +
             " | EnablePhase2: " + (string)EnablePhase2);
