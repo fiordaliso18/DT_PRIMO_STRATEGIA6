@@ -107,15 +107,48 @@ bool CheckExitConditions()
 //================================================================
 bool OpenPosition()
 {
-   // stub — Story 2.2
-   return false;
+   if(!TerminalInfoInteger(TERMINAL_TRADE_ALLOWED) ||
+      !MQLInfoInteger(MQL_TRADE_ALLOWED))
+   {
+      LogEvent("SKIP | Trading not allowed");
+      return false;
+   }
+
+   double ask      = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double slPrice  = ask * (1.0 - SL_Percent / 100.0);
+   double slPoints = (ask - slPrice) / SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   long   minStop  = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
+
+   if(slPoints < (double)minStop)
+   {
+      LogEvent("SKIP | SL distance " + DoubleToString(slPoints, 0) +
+               " pts < broker min " + (string)minStop);
+      return false;
+   }
+
+   double lots = CalculateLots();
+   if(lots <= 0.0) return false;
+
+   if(!trade.Buy(lots, _Symbol, 0, slPrice, 0, "S6 entry"))
+   {
+      LogEvent("ERROR | OrderSend failed | Code: " + (string)GetLastError());
+      return false;
+   }
+
+   LogEvent("ORDER | BUY placed | Lots: " + DoubleToString(lots, 2) +
+            " | SL: " + DoubleToString(slPrice, _Digits));
+   return true;
 }
 
 bool ClosePosition(string reason)
 {
-   // stub — Story 2.2
+   if(!trade.PositionClose(_Symbol))
+   {
+      LogEvent("ERROR | PositionClose failed | Code: " + (string)GetLastError());
+      return false;
+   }
    LogEvent("CLOSE | " + reason);
-   return false;
+   return true;
 }
 
 //================================================================
