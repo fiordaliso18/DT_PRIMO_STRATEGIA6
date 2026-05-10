@@ -199,6 +199,7 @@ bool OpenPosition()
 
 bool ClosePosition(string reason)
 {
+   trade.SetComment(reason);
    if(!trade.PositionClose(_Symbol))
    {
       LogEvent("ERROR | PositionClose failed | Code: " + (string)GetLastError());
@@ -311,6 +312,80 @@ void UpdateReport()
    }
 }
 
+void WriteTradesToCSV()
+{
+   string filename = "S6_trades.csv";
+   int fh = FileOpen(filename, FILE_WRITE|FILE_CSV|FILE_ANSI, ',');
+   if(fh == INVALID_HANDLE)
+   {
+      LogEvent("ERROR | CSV open failed | Code: " + (string)GetLastError());
+      return;
+   }
+
+   FileWrite(fh, "Trade", "EntryDate", "EntryPrice", "ExitDate", "ExitPrice",
+             "Lots", "Profit", "DurationDays", "Reason");
+
+   HistorySelect(0, TimeCurrent());
+   int total = HistoryDealsTotal();
+   int tradeNum = 0;
+
+   for(int i = 0; i < total; i++)
+   {
+      ulong exitTkt = HistoryDealGetTicket(i);
+      if(HistoryDealGetInteger(exitTkt, DEAL_MAGIC)  != MagicNumber) continue;
+      if(HistoryDealGetString(exitTkt,  DEAL_SYMBOL) != _Symbol)     continue;
+      if(HistoryDealGetInteger(exitTkt, DEAL_ENTRY)  != DEAL_ENTRY_OUT) continue;
+
+      tradeNum++;
+      double profit   = HistoryDealGetDouble(exitTkt, DEAL_PROFIT)
+                      + HistoryDealGetDouble(exitTkt, DEAL_SWAP)
+                      + HistoryDealGetDouble(exitTkt, DEAL_COMMISSION);
+      datetime exitDt = (datetime)HistoryDealGetInteger(exitTkt, DEAL_TIME);
+      double   exitPx = HistoryDealGetDouble(exitTkt,  DEAL_PRICE);
+      double   lots   = HistoryDealGetDouble(exitTkt,  DEAL_VOLUME);
+      string   comment= HistoryDealGetString(exitTkt,  DEAL_COMMENT);
+
+      ulong    posId   = (ulong)HistoryDealGetInteger(exitTkt, DEAL_POSITION_ID);
+      datetime entryDt = 0;
+      double   entryPx = 0;
+      for(int j = 0; j < total; j++)
+      {
+         ulong inTkt = HistoryDealGetTicket(j);
+         if((ulong)HistoryDealGetInteger(inTkt, DEAL_POSITION_ID) != posId) continue;
+         if(HistoryDealGetInteger(inTkt, DEAL_ENTRY) != DEAL_ENTRY_IN)       continue;
+         entryDt = (datetime)HistoryDealGetInteger(inTkt, DEAL_TIME);
+         entryPx = HistoryDealGetDouble(inTkt, DEAL_PRICE);
+         break;
+      }
+
+      double durDays = (entryDt > 0) ? (double)(exitDt - entryDt) / 86400.0 : 0;
+
+      string reason = comment;
+      if(reason == "" || reason == "S6 entry")
+      {
+         if((ENUM_DEAL_REASON)HistoryDealGetInteger(exitTkt, DEAL_REASON) == DEAL_REASON_SL)
+            reason = "SL";
+         else if(durDays >= MaxDays - 0.5)
+            reason = "TIMEOUT";
+         else
+            reason = "RSI_EXIT";
+      }
+
+      FileWrite(fh, tradeNum,
+                TimeToString(entryDt, TIME_DATE|TIME_MINUTES),
+                DoubleToString(entryPx, _Digits),
+                TimeToString(exitDt,   TIME_DATE|TIME_MINUTES),
+                DoubleToString(exitPx, _Digits),
+                DoubleToString(lots, 2),
+                DoubleToString(profit, 2),
+                DoubleToString(durDays, 1),
+                reason);
+   }
+
+   FileClose(fh);
+   LogEvent("CSV | " + filename + " | " + (string)tradeNum + " trades written");
+}
+
 void GenerateFinalReport()
 {
    double winRate, pf, maxDD, avgDays;
@@ -321,6 +396,8 @@ void GenerateFinalReport()
             " | PF: "    + DoubleToString(pf, 2) +
             " | MaxDD: " + DoubleToString(maxDD, 2) + "%" +
             " | AvgDays: " + DoubleToString(avgDays, 1));
+
+   WriteTradesToCSV();
 }
 
 //================================================================
