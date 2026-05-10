@@ -326,6 +326,7 @@ int OnInit()
       LogEvent("ERROR | SMA handle creation failed | Code: " + (string)GetLastError());
       return INIT_FAILED;
    }
+   ChartIndicatorAdd(0, 0, hSMA);
 
    hRSI = iRSI(_Symbol, PERIOD_D1, RSI_Period, PRICE_CLOSE);
    if(hRSI == INVALID_HANDLE)
