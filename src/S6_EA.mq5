@@ -36,6 +36,11 @@ CTrade   trade;
 bool IsNewBar()
 {
    datetime currentBarTime = iTime(_Symbol, PERIOD_D1, 0);
+   if(currentBarTime == 0)
+   {
+      LogEvent("ERROR | iTime returned 0 — data not ready");
+      return false;
+   }
    if(currentBarTime == lastBarTime) return false;
    lastBarTime = currentBarTime;
    return true;
@@ -43,8 +48,19 @@ bool IsNewBar()
 
 bool IsWarmedUp()
 {
-   // stub — Story 1.2
-   return false;
+   int minBars = SMA_Period + RSI_Period + 1;
+   if(Bars(_Symbol, PERIOD_D1) < minBars)
+   {
+      LogEvent("WARMUP | Insufficient bars: " + (string)Bars(_Symbol, PERIOD_D1) +
+               " / " + (string)minBars + " needed");
+      return false;
+   }
+   if(!isWarmedUp)
+   {
+      isWarmedUp = true;
+      LogEvent("WARMUP | Warm-up complete — bars: " + (string)Bars(_Symbol, PERIOD_D1));
+   }
+   return true;
 }
 
 bool HasOpenPosition()
@@ -114,7 +130,9 @@ void GenerateFinalReport()
 int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
-   equityHigh = AccountInfoDouble(ACCOUNT_EQUITY);
+   equityHigh   = AccountInfoDouble(ACCOUNT_EQUITY);
+   lastBarTime  = iTime(_Symbol, PERIOD_D1, 0);   // evita bar-change spurio al primo tick
+   isWarmedUp   = false;
    LogEvent("EA initialized | MagicNumber: " + (string)MagicNumber +
             " | EnablePhase2: " + (string)EnablePhase2);
    return INIT_SUCCEEDED;
