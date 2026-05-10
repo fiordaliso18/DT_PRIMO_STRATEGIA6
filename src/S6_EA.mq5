@@ -240,14 +240,68 @@ void LogEvent(string msg)
    Print("[S6] " + msg);
 }
 
+void CalcStats(double &outWinRate, double &outPF, double &outMaxDD, double &outAvgDays)
+{
+   int    wins = 0, losses = 0, trades = 0;
+   double grossProfit = 0.0, grossLoss = 0.0;
+   double totalDays   = 0.0;
+   double peak        = equityHigh;
+   double maxDD       = 0.0;
+
+   HistorySelect(0, TimeCurrent());
+   int total = HistoryDealsTotal();
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(HistoryDealGetInteger(ticket, DEAL_MAGIC)  != MagicNumber)  continue;
+      if(HistoryDealGetString(ticket,  DEAL_SYMBOL) != _Symbol)      continue;
+      if(HistoryDealGetInteger(ticket, DEAL_ENTRY)  != DEAL_ENTRY_OUT) continue;
+
+      double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT)
+                    + HistoryDealGetDouble(ticket, DEAL_SWAP)
+                    + HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+      trades++;
+      if(profit > 0) { wins++;   grossProfit += profit; }
+      else           { losses++;  grossLoss  += MathAbs(profit); }
+
+      double equity = AccountInfoDouble(ACCOUNT_BALANCE);
+      if(equity > peak) peak = equity;
+      double dd = (peak - equity) / peak * 100.0;
+      if(dd > maxDD) maxDD = dd;
+   }
+
+   outWinRate = (trades > 0) ? (double)wins / trades * 100.0 : 0.0;
+   outPF      = (grossLoss > 0) ? grossProfit / grossLoss : 0.0;
+   outMaxDD   = maxDD;
+   outAvgDays = (trades > 0) ? totalDays / trades : 0.0;
+   totalTrades = trades;
+   winTrades   = wins;
+}
+
 void UpdateReport()
 {
-   // stub — Story 2.4
+   double winRate, pf, maxDD, avgDays;
+   CalcStats(winRate, pf, maxDD, avgDays);
+
+   Comment(StringFormat("S6 EA | WR: %.1f%% (%d/%d) | MaxDD: %.2f%%",
+           winRate, winTrades, totalTrades, maxDD));
+
+   if(EnablePhase2)
+   {
+      // stub Phase 2 — Story 3.1
+   }
 }
 
 void GenerateFinalReport()
 {
-   // stub — Story 2.4
+   double winRate, pf, maxDD, avgDays;
+   CalcStats(winRate, pf, maxDD, avgDays);
+
+   LogEvent("FINAL REPORT | Trades: " + (string)totalTrades +
+            " | WR: "    + DoubleToString(winRate, 1) + "%" +
+            " | PF: "    + DoubleToString(pf, 2) +
+            " | MaxDD: " + DoubleToString(maxDD, 2) + "%" +
+            " | AvgDays: " + DoubleToString(avgDays, 1));
 }
 
 //================================================================
