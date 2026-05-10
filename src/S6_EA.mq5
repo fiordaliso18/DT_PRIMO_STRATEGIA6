@@ -63,6 +63,27 @@ bool IsWarmedUp()
    return true;
 }
 
+double g_smaValue = 0.0;   // valore SMA closed bar — aggiornato da ReadIndicators()
+double g_rsiValue = 0.0;   // valore RSI closed bar — aggiornato da ReadIndicators()
+
+bool ReadIndicators()
+{
+   double smaBuffer[1], rsiBuffer[1];
+   if(CopyBuffer(hSMA, 0, 1, 1, smaBuffer) < 1)
+   {
+      LogEvent("ERROR | CopyBuffer SMA failed | Code: " + (string)GetLastError());
+      return false;
+   }
+   if(CopyBuffer(hRSI, 0, 1, 1, rsiBuffer) < 1)
+   {
+      LogEvent("ERROR | CopyBuffer RSI failed | Code: " + (string)GetLastError());
+      return false;
+   }
+   g_smaValue = smaBuffer[0];
+   g_rsiValue = rsiBuffer[0];
+   return true;
+}
+
 bool HasOpenPosition()
 {
    // stub — Story 2.3
@@ -130,18 +151,35 @@ void GenerateFinalReport()
 int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
-   equityHigh   = AccountInfoDouble(ACCOUNT_EQUITY);
-   lastBarTime  = iTime(_Symbol, PERIOD_D1, 0);   // evita bar-change spurio al primo tick
-   isWarmedUp   = false;
+   equityHigh  = AccountInfoDouble(ACCOUNT_EQUITY);
+   lastBarTime = iTime(_Symbol, PERIOD_D1, 0);
+   isWarmedUp  = false;
+
+   hSMA = iMA(_Symbol, PERIOD_D1, SMA_Period, 0, MODE_SMA, PRICE_CLOSE);
+   if(hSMA == INVALID_HANDLE)
+   {
+      LogEvent("ERROR | SMA handle creation failed | Code: " + (string)GetLastError());
+      return INIT_FAILED;
+   }
+
+   hRSI = iRSI(_Symbol, PERIOD_D1, RSI_Period, PRICE_CLOSE);
+   if(hRSI == INVALID_HANDLE)
+   {
+      LogEvent("ERROR | RSI handle creation failed | Code: " + (string)GetLastError());
+      return INIT_FAILED;
+   }
+
    LogEvent("EA initialized | MagicNumber: " + (string)MagicNumber +
+            " | SMA(" + (string)SMA_Period + ") RSI(" + (string)RSI_Period + ")" +
             " | EnablePhase2: " + (string)EnablePhase2);
    return INIT_SUCCEEDED;
 }
 
 void OnTick()
 {
-   if(!IsNewBar())    return;
-   if(!IsWarmedUp())  return;
+   if(!IsNewBar())       return;
+   if(!IsWarmedUp())     return;
+   if(!ReadIndicators()) return;
 
    double currentEquity = AccountInfoDouble(ACCOUNT_EQUITY);
    if(currentEquity > equityHigh) equityHigh = currentEquity;
@@ -154,7 +192,7 @@ void OnTick()
 void OnDeinit(const int reason)
 {
    GenerateFinalReport();
-   IndicatorRelease(hSMA);
-   IndicatorRelease(hRSI);
+   IndicatorRelease(hSMA); hSMA = INVALID_HANDLE;
+   IndicatorRelease(hRSI); hRSI = INVALID_HANDLE;
    LogEvent("EA deinitialized | Reason: " + (string)reason);
 }
