@@ -24,6 +24,7 @@ input bool   EnablePhase2   = false;      // Enable Phase 2 features
 datetime lastBarTime = 0;
 datetime entryTime   = 0;    // orario apertura posizione corrente (per MaxDays)
 double   equityHigh  = 0.0;
+double   maxDrawdown = 0.0;
 int      totalTrades = 0;
 int      winTrades   = 0;
 int      hSMA        = INVALID_HANDLE;
@@ -245,8 +246,6 @@ void CalcStats(double &outWinRate, double &outPF, double &outMaxDD, double &outA
    int    wins = 0, losses = 0, trades = 0;
    double grossProfit = 0.0, grossLoss = 0.0;
    double totalDays   = 0.0;
-   double peak        = equityHigh;
-   double maxDD       = 0.0;
 
    HistorySelect(0, TimeCurrent());
    int total = HistoryDealsTotal();
@@ -264,15 +263,21 @@ void CalcStats(double &outWinRate, double &outPF, double &outMaxDD, double &outA
       if(profit > 0) { wins++;   grossProfit += profit; }
       else           { losses++;  grossLoss  += MathAbs(profit); }
 
-      double equity = AccountInfoDouble(ACCOUNT_BALANCE);
-      if(equity > peak) peak = equity;
-      double dd = (peak - equity) / peak * 100.0;
-      if(dd > maxDD) maxDD = dd;
+      ulong    posId    = (ulong)HistoryDealGetInteger(ticket, DEAL_POSITION_ID);
+      datetime exitTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+      for(int j = 0; j < total; j++)
+      {
+         ulong inTicket = HistoryDealGetTicket(j);
+         if((ulong)HistoryDealGetInteger(inTicket, DEAL_POSITION_ID) != posId) continue;
+         if(HistoryDealGetInteger(inTicket, DEAL_ENTRY) != DEAL_ENTRY_IN)       continue;
+         totalDays += (double)(exitTime - (datetime)HistoryDealGetInteger(inTicket, DEAL_TIME)) / 86400.0;
+         break;
+      }
    }
 
    outWinRate = (trades > 0) ? (double)wins / trades * 100.0 : 0.0;
    outPF      = (grossLoss > 0) ? grossProfit / grossLoss : 0.0;
-   outMaxDD   = maxDD;
+   outMaxDD   = maxDrawdown;
    outAvgDays = (trades > 0) ? totalDays / trades : 0.0;
    totalTrades = trades;
    winTrades   = wins;
@@ -311,6 +316,7 @@ int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
    equityHigh  = AccountInfoDouble(ACCOUNT_EQUITY);
+   maxDrawdown = 0.0;
    lastBarTime = iTime(_Symbol, PERIOD_D1, 0);
    isWarmedUp  = false;
 
@@ -357,6 +363,11 @@ void OnTick()
 
    double currentEquity = AccountInfoDouble(ACCOUNT_EQUITY);
    if(currentEquity > equityHigh) equityHigh = currentEquity;
+   if(equityHigh > 0)
+   {
+      double dd = (equityHigh - currentEquity) / equityHigh * 100.0;
+      if(dd > maxDrawdown) maxDrawdown = dd;
+   }
 
    CheckExitConditions();
    CheckEntryConditions();
