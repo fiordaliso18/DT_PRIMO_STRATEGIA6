@@ -119,11 +119,6 @@ bool CheckEntryConditions()
       entryTime = TimeCurrent();
       totalTrades++;
    }
-   else if(trade.ResultRetcode() == TRADE_RETCODE_MARKET_CLOSED)
-   {
-      pendingEntry = true;
-      LogEvent("INFO | Market closed at bar open — entry pending for next tick");
-   }
    return true;
 }
 
@@ -180,7 +175,18 @@ bool OpenPosition()
 
    if(!trade.Buy(lots, _Symbol, 0, slPrice, 0, "S6 entry"))
    {
-      LogEvent("ERROR | OrderSend failed | Code: " + (string)GetLastError());
+      int  err     = GetLastError();
+      uint retcode = trade.ResultRetcode();
+      if(retcode == TRADE_RETCODE_MARKET_CLOSED || err == 4756)
+      {
+         pendingEntry = true;
+         LogEvent("INFO | Market closed — retry pending | RetCode: " + (string)retcode);
+      }
+      else
+      {
+         LogEvent("ERROR | OrderSend failed | Code: " + (string)err +
+                  " | RetCode: " + (string)retcode);
+      }
       return false;
    }
 
@@ -367,10 +373,10 @@ void OnTick()
 {
    if(pendingEntry && !HasOpenPosition())
    {
+      pendingEntry = false;
       if(OpenPosition())
       {
-         pendingEntry = false;
-         entryTime    = TimeCurrent();
+         entryTime = TimeCurrent();
          totalTrades++;
          LogEvent("INFO | Pending entry executed after market open");
       }
