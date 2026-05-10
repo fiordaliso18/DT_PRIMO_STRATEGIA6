@@ -251,12 +251,14 @@ Problem-solving MVP: an EA that runs S6 in backtest with verifiable results and 
 - Final report on EA stop: trade count, WR, PF, max DD, avg duration
 - Visual TP line on chart at R/R 1:2.5 (display only — not an exit trigger)
 - Trade log to CSV (`S6_log.csv`): date, entry, SL, exit, P&L, days, exit reason
+- Performance summary to CSV (`S6_report.csv`): timestamped WR, PF, MaxDD, total trades on every snapshot and final report
+- Push notification to MT5 mobile app on every position close (exit reason + P&L)
 
 ### Phase 3 — Vision: Expansion
 
 - Multi-instrument support (S6 on multiple indices simultaneously)
-- Push notification alerts on trade open/close
 - Framework reusability for next strategies (S7, S8...)
+- Push notification on trade open (close notification moved to Phase 2 — FR39)
 
 ### Risk Mitigation
 

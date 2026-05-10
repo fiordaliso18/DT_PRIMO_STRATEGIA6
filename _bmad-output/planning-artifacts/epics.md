@@ -508,7 +508,7 @@ So that I have a complete, Excel-compatible trade history for post-session analy
 
 **Given** `EnablePhase2 = true` and `OnInit()` runs
 **When** the CSV log is initialized (inside `if(EnablePhase2)`)
-**Then** `FileOpen("S6_log.csv", FILE_WRITE|FILE_CSV|FILE_SHARE_READ|FILE_ANSI)` opens successfully in the MT5 `Files/` folder
+**Then** `csvLogHandle = FileOpen("S6_log.csv", FILE_WRITE|FILE_CSV|FILE_SHARE_READ|FILE_ANSI)` opens successfully in the MT5 `Files/` folder — il handle è la variabile globale `int csvLogHandle`, distinta da `int csvReportHandle` usato da Story 3.4 per `S6_report.csv`
 **And** if the file is new, a header row is written: `date,entry_price,sl_price,exit_price,pnl,days_open,exit_reason`
 
 **Given** a trade closes via `ClosePosition(reason)`
@@ -576,8 +576,8 @@ So that I have a timestamped history of strategy performance readable in Excel w
 
 **Given** `EnablePhase2 = true` and `OnInit()` runs
 **When** the report file is initialized (inside `if(EnablePhase2)`)
-**Then** `FileOpen("S6_report.csv", FILE_WRITE|FILE_CSV|FILE_SHARE_READ|FILE_ANSI)` opens in the MT5 `Files/` folder
-**And** if the file is new, a header row is written: `timestamp,total_trades,win_rate,profit_factor,max_drawdown,avg_duration`
+**Then** `csvReportHandle = FileOpen("S6_report.csv", FILE_WRITE|FILE_CSV|FILE_SHARE_READ|FILE_ANSI)` opens in the MT5 `Files/` folder — il handle è la variabile globale `int csvReportHandle`, distinta da `int csvLogHandle` usato da Story 3.2 per `S6_log.csv`
+**And** se il file è nuovo, viene scritta la riga header: `timestamp,total_trades,win_rate,profit_factor,max_drawdown,avg_duration`
 
 **Given** the periodic snapshot interval has elapsed
 **When** `GeneratePeriodicReport()` executes (inside `if(EnablePhase2)`)
