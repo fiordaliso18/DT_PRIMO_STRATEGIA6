@@ -30,6 +30,7 @@ int      winTrades   = 0;
 int      hSMA        = INVALID_HANDLE;
 int      hRSI        = INVALID_HANDLE;
 bool     isWarmedUp  = false;
+bool     pendingEntry = false;
 CTrade   trade;
 
 //================================================================
@@ -117,6 +118,11 @@ bool CheckEntryConditions()
    {
       entryTime = TimeCurrent();
       totalTrades++;
+   }
+   else if(trade.ResultRetcode() == TRADE_RETCODE_MARKET_CLOSED)
+   {
+      pendingEntry = true;
+      LogEvent("INFO | Market closed at bar open — entry pending for next tick");
    }
    return true;
 }
@@ -317,8 +323,9 @@ int OnInit()
    trade.SetExpertMagicNumber(MagicNumber);
    equityHigh  = AccountInfoDouble(ACCOUNT_EQUITY);
    maxDrawdown = 0.0;
-   lastBarTime = iTime(_Symbol, PERIOD_D1, 0);
-   isWarmedUp  = false;
+   lastBarTime  = iTime(_Symbol, PERIOD_D1, 0);
+   isWarmedUp   = false;
+   pendingEntry = false;
 
    hSMA = iMA(_Symbol, PERIOD_D1, SMA_Period, 0, MODE_SMA, PRICE_CLOSE);
    if(hSMA == INVALID_HANDLE)
@@ -358,7 +365,21 @@ int OnInit()
 
 void OnTick()
 {
-   if(!IsNewBar())       return;
+   if(pendingEntry && !HasOpenPosition())
+   {
+      if(OpenPosition())
+      {
+         pendingEntry = false;
+         entryTime    = TimeCurrent();
+         totalTrades++;
+         LogEvent("INFO | Pending entry executed after market open");
+      }
+      return;
+   }
+
+   if(!IsNewBar()) return;
+   pendingEntry = false;
+
    if(!IsWarmedUp())     return;
    if(!ReadIndicators()) return;
 
