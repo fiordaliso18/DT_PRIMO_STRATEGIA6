@@ -140,6 +140,7 @@ FR36: Epic 1 — Strategy Tester "Open Prices Only" compatibility
 FR37: Epic 1 — Nessun DLL import, nessuna dipendenza esterna
 FR38: Epic 3 — Performance summary (WR, PF, MaxDD, total trades) scritta su file CSV ad ogni snapshot e al final report (Phase 2)
 FR39: Epic 3 — Push notification inviata all'app MT5 mobile ad ogni chiusura posizione (Phase 2)
+FR40: Epic 3 — Linea entry (verde, solid) e linea SL (rossa, dashed) disegnate sul grafico quando la posizione è aperta; rimosse alla chiusura (Phase 2)
 
 ## Epic List
 
@@ -157,9 +158,9 @@ Il trader può eseguire un backtest completo della strategia S6: gate di entrata
 
 ### Epic 3: Phase 2 — Live Operations & Extended Reporting
 
-Con `EnablePhase2 = true`, il trader ottiene: report periodico ogni N ore, log CSV di ogni trade (data/entry/SL/exit/P&L/days/reason), performance summary su file CSV, push notification mobile su ogni chiusura posizione, e linea TP visuale a R/R 1:2.5. Supporta operatività live non presidiata 24/7.
+Con `EnablePhase2 = true`, il trader ottiene: report periodico ogni N ore, log CSV di ogni trade, performance summary su file CSV, push notification mobile su ogni chiusura posizione, linea TP visuale a R/R 1:2.5, e linee Entry/SL sul grafico. Supporta operatività live non presidiata 24/7.
 
-**FRs covered:** FR17, FR20, FR23, FR38, FR39
+**FRs covered:** FR17, FR20, FR23, FR38, FR39, FR40
 
 ---
 
@@ -625,3 +626,37 @@ So that I am immediately informed of trade outcomes without checking MT5 manuall
 **Then** `SendNotification()` is never called — Phase 1 path unaffected
 
 **FRs satisfied:** FR39
+
+---
+
+### Story 3.6: Visual Entry & SL Lines
+
+As a trader,
+I want linee orizzontali disegnate sul grafico al prezzo di entrata (verde, solid) e al prezzo dello SL (rossa, dashed) quando si apre una posizione con `EnablePhase2 = true`,
+So that posso vedere visivamente i livelli chiave della posizione aperta senza aprire il pannello delle posizioni.
+
+**Acceptance Criteria:**
+
+**Given** `EnablePhase2 = true` e una posizione BUY viene aperta
+**When** `DrawPositionLines()` è chiamata (dentro `if(EnablePhase2)` in `OpenPosition()`, insieme a `DrawTPLine()` di Story 3.3)
+**Then** viene creato `OBJ_HLINE` con nome `"S6_Entry_Line"` al prezzo di entrata — colore `clrGreen`, stile `STYLE_SOLID`
+**And** viene creato `OBJ_HLINE` con nome `"S6_SL_Line"` al prezzo dello stop loss — colore `clrRed`, stile `STYLE_DASH`
+
+**Given** le tre linee sono visibili sul grafico (Entry + SL + TP da Story 3.3)
+**When** ispeziono la logica di `CheckExitConditions()` e `OnTick()`
+**Then** nessuna funzione legge il prezzo di `"S6_Entry_Line"` o `"S6_SL_Line"` per triggerare uscite — sono puramente visuali
+
+**Given** la posizione viene chiusa per qualsiasi motivo (`ClosePosition(reason)`)
+**When** il cleanup visuale esegue (dentro `if(EnablePhase2)`)
+**Then** `ObjectDelete(0, "S6_Entry_Line")` e `ObjectDelete(0, "S6_SL_Line")` vengono chiamate insieme a `ObjectDelete(0, "S6_TP_Line")` di Story 3.3 — nessun oggetto fantasma sul grafico
+
+**Given** `ObjectCreate()` fallisce per uno dei due oggetti
+**When** l'errore viene rilevato
+**Then** `LogEvent("ERROR | DrawPositionLines failed")` è chiamato e l'esecuzione continua — nessun crash
+
+**Given** `EnablePhase2 = false` (default)
+**When** una posizione apre
+**Then** `DrawPositionLines()` non viene mai chiamata — nessun oggetto grafico creato
+
+**FRs satisfied:** FR40
+**ARCH satisfied:** ARCH-08

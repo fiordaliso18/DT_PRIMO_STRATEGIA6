@@ -253,6 +253,7 @@ Problem-solving MVP: an EA that runs S6 in backtest with verifiable results and 
 - Trade log to CSV (`S6_log.csv`): date, entry, SL, exit, P&L, days, exit reason
 - Performance summary to CSV (`S6_report.csv`): timestamped WR, PF, MaxDD, total trades on every snapshot and final report
 - Push notification to MT5 mobile app on every position close (exit reason + P&L)
+- Visual entry price line (green) and SL line (red dashed) drawn on chart when position is open
 
 ### Phase 3 — Vision: Expansion
 
@@ -333,6 +334,7 @@ Problem-solving MVP: an EA that runs S6 in backtest with verifiable results and 
 - **FR37:** The EA operates without external DLL dependencies or files required at runtime
 - **FR38:** The EA writes a performance summary row (timestamp, total trades, win rate, profit factor, max drawdown, average duration) to `S6_report.csv` on every periodic snapshot and at final report *(Phase 2)*
 - **FR39:** The EA sends a push notification to the MT5 mobile app on every position close, containing exit reason and P&L; failures are logged without stopping the EA *(Phase 2)*
+- **FR40:** The EA draws horizontal lines on the chart at entry price (green, solid) and SL price (red, dashed) when a position opens; both lines are removed when the position closes *(Phase 2)*
 
 ---
 
