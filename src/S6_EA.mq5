@@ -199,7 +199,6 @@ bool OpenPosition()
 
 bool ClosePosition(string reason)
 {
-   trade.SetComment(reason);
    if(!trade.PositionClose(_Symbol))
    {
       LogEvent("ERROR | PositionClose failed | Code: " + (string)GetLastError());
@@ -315,7 +314,7 @@ void UpdateReport()
 void WriteTradesToCSV()
 {
    string filename = "S6_trades.csv";
-   int fh = FileOpen(filename, FILE_WRITE|FILE_CSV|FILE_ANSI, ',');
+   int fh = FileOpen(filename, FILE_WRITE|FILE_CSV|FILE_ANSI, ';');
    if(fh == INVALID_HANDLE)
    {
       LogEvent("ERROR | CSV open failed | Code: " + (string)GetLastError());
