@@ -177,15 +177,17 @@ bool OpenPosition()
    {
       int  err     = GetLastError();
       uint retcode = trade.ResultRetcode();
-      if(retcode == TRADE_RETCODE_MARKET_CLOSED || err == 4756)
+      if(retcode == TRADE_RETCODE_MARKET_CLOSED || retcode == 10018 || err == 4756)
       {
          pendingEntry = true;
-         LogEvent("INFO | Market closed — retry pending | RetCode: " + (string)retcode);
+         LogEvent("INFO | Market closed — retry pending | Err: " + (string)err +
+                  " | RetCode: " + (string)retcode);
       }
       else
       {
-         LogEvent("ERROR | OrderSend failed | Code: " + (string)err +
-                  " | RetCode: " + (string)retcode);
+         LogEvent("ERROR | OrderSend failed | Err: " + (string)err +
+                  " | RetCode: " + (string)retcode +
+                  " — se RetCode=10018 ricompila EA");
       }
       return false;
    }
