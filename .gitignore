@@ -1,19 +1,8 @@
-# Python virtual environments / Ambienti virtuali Python
-.venv*/
-venv*/
-__pycache__/
-*.pyc
-*.pyo
+# Build artifacts
+build.log
 
-# MQL5 compiled binaries / Binari compilati MQL5
+# Local IDE/tool settings
+.claude/settings.local.json
+
+# MetaTrader compiled files
 *.ex5
-*.ex4
-
-# OS / Sistema operativo
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Editor / Editor
-.idea/
-*.swp
