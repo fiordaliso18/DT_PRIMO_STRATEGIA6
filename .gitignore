@@ -6,3 +6,6 @@ build.log
 
 # MetaTrader compiled files
 *.ex5
+
+# Python virtual environment
+.venv39/
