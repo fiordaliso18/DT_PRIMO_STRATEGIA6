@@ -59,14 +59,16 @@ bool CS6Trader::CheckExitConditions()
    }
 
    // Uscita per timeout — [S6-002-R003] — priorità 3
+   // iBarShift conta barre D1 effettive (trading days), non giorni solari.
+   // 15 sedute di borsa != 15 giorni solari (~21 con i weekend).
    if(_EntryTime > 0)
    {
-      int daysOpen = (int)((TimeCurrent() - _EntryTime) / 86400);
-      if(daysOpen >= _MaxDays)
+      int barsOpen = iBarShift(_Symbol, PERIOD_D1, _EntryTime, false);
+      if(barsOpen >= _MaxDays)
       {
-         Log("INFO | Timeout | Days open: " + (string)daysOpen);
+         Log("INFO | Timeout | Bars open: " + (string)barsOpen);
          if(ClosePosition("TIMEOUT"))
-            Notify("EXIT", "S6 TIMEOUT", "Days:" + (string)daysOpen);
+            Notify("EXIT", "S6 TIMEOUT", "Bars:" + (string)barsOpen);
          return true;
       }
    }

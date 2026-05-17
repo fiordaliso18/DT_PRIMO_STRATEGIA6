@@ -50,10 +50,13 @@ viene identificata nel report finale tramite `DEAL_REASON_SL`.
 Motivo di chiusura registrato: "SL".
 
 **[S6-002-R003] — Uscita per timeout (priorità 3)**
-Se la posizione è aperta da un numero di giorni uguale o superiore
-al periodo massimo configurato (MaxDays), l'EA chiude la posizione
-forzatamente, indipendentemente dal valore RSI.
-Il conteggio dei giorni usa il tempo di apertura salvato all'entrata.
+Se la posizione è aperta da un numero di **sedute di borsa** (barre D1)
+uguale o superiore al periodo massimo configurato (MaxDays),
+l'EA chiude la posizione forzatamente, indipendentemente dal valore RSI.
+Il conteggio usa `iBarShift(_Symbol, PERIOD_D1, _EntryTime, false)`,
+che conta le barre D1 effettive — weekend e festività esclusi.
+Con MaxDays=15, la posizione viene chiusa dopo 15 sedute di borsa
+(≈ 21 giorni di calendario).
 Motivo di chiusura registrato: "TIMEOUT".
 
 **[S6-002-R004] — Valutazione solo su nuova barra**
@@ -80,7 +83,7 @@ non viene aperta.
 |---|---|---|---|
 | RSI_Exit | intero | 50 | Soglia RSI di uscita (esci se RSI > soglia) |
 | SL_Percent | decimale | 2.0 | Stop Loss % dal prezzo di entrata (Ask) |
-| MaxDays | intero | 15 | Giorni massimi di detenzione |
+| MaxDays | intero | 15 | Sedute di borsa massime di detenzione (barre D1, non giorni solari) |
 
 ---
 
@@ -100,15 +103,15 @@ non viene aperta.
   Atteso:  posizione mantenuta aperta ✓
 
 [S6-002-T003] Uscita per timeout
-  Dato:    posizione BUY aperta da MaxDays o più giorni
+  Dato:    posizione BUY aperta da MaxDays o più sedute di borsa (barre D1)
            RSI(14)[1] ≤ RSI_Exit
   Quando:  nuova barra D1 apre
   Atteso:  posizione chiusa ✓
-           log "INFO | Timeout | Days open: N" nel journal ✓
+           log "INFO | Timeout | Bars open: N" nel journal ✓
            log "CLOSE | TIMEOUT" nel journal ✓
 
-[S6-002-T004] Nessun timeout se giorni < MaxDays
-  Dato:    posizione BUY aperta da meno di MaxDays giorni
+[S6-002-T004] Nessun timeout se sedute < MaxDays
+  Dato:    posizione BUY aperta da meno di MaxDays barre D1
            RSI(14)[1] ≤ RSI_Exit
   Atteso:  posizione mantenuta aperta ✓
 

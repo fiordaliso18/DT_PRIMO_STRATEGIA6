@@ -34,7 +34,8 @@
 
 ## Motivo di Chiusura
 - [ ] Check `DEAL_REASON_SL` → "SL"
-- [ ] Euristica timeout `durDays >= _MaxDays - 0.5` → "TIMEOUT"
+- [ ] Euristica timeout: `barsHeld = iBarShift(entryDt) - iBarShift(exitDt)` → se `barsHeld >= _MaxDays` → "TIMEOUT"
+- [ ] `DurationDays` nel CSV rimane in giorni solari (informativo); solo il criterio TIMEOUT usa barre D1
 - [ ] Default → "RSI_EXIT"
 - [ ] Nessun trade con Reason vuota o "S6 entry"
 

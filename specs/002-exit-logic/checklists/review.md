@@ -5,8 +5,8 @@
 - [ ] `CS6Trader::CheckExitConditions()` chiamata PRIMA di `CheckEntryConditions()` in `TradeOnBar()`
 - [ ] Priorità corretta: RSI_EXIT > TIMEOUT (l'if `_RsiVal` è prima dell'if `_EntryTime`)
 - [ ] Uscita RSI: `_RsiVal > _RsiExit` (strettamente superiore)
-- [ ] Timeout: `daysOpen >= _MaxDays` (uguale o superiore)
-- [ ] `_EntryTime` usato per calcolare `daysOpen` — non `TimeCurrent()` standalone
+- [ ] Timeout: `barsOpen >= _MaxDays` dove `barsOpen = iBarShift(_Symbol, PERIOD_D1, _EntryTime, false)`
+- [ ] `iBarShift` conta barre D1 effettive (sedute di borsa), NON giorni di calendario
 
 ## Stop Loss
 - [ ] `slPrice = ask * (1.0 - _SlPercent / 100.0)` — formula corretta
@@ -22,7 +22,7 @@
 
 ## Logging e Notifiche
 - [ ] `Log("CLOSE | RSI_EXIT")` per uscita RSI
-- [ ] `Log("INFO | Timeout | Days open: N")` + `Log("CLOSE | TIMEOUT")` per timeout
+- [ ] `Log("INFO | Timeout | Bars open: N")` + `Log("CLOSE | TIMEOUT")` per timeout
 - [ ] `Log("ERROR | PositionClose failed")` in caso di errore chiusura
 - [ ] `Log("SKIP | SL distance X pts < broker min Y")` se SL troppo vicino
 - [ ] `Notify("EXIT", ...)` chiama `_Reporter.FileReport()` su `S6_events.csv`

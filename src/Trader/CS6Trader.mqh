@@ -357,14 +357,17 @@ bool CS6Trader::CheckExitConditions()
    }
 
    // Uscita timeout (priorita' 3)
+   // iBarShift conta le barre D1 effettive (trading days), non i giorni di calendario.
+   // Con MaxDays=15, chiude dopo 15 sedute di borsa — non 15 giorni solari (che
+   // sarebbero ~21 per effetto dei weekend).
    if(_EntryTime > 0)
    {
-      int daysOpen = (int)((TimeCurrent() - _EntryTime) / 86400);
-      if(daysOpen >= _MaxDays)
+      int barsOpen = iBarShift(_Symbol, PERIOD_D1, _EntryTime, false);
+      if(barsOpen >= _MaxDays)
       {
-         Log("INFO | Timeout | Days open: " + (string)daysOpen);
+         Log("INFO | Timeout | Bars open: " + (string)barsOpen);
          if(ClosePosition("TIMEOUT"))
-            Notify("EXIT", "S6 TIMEOUT", "Days:" + (string)daysOpen);
+            Notify("EXIT", "S6 TIMEOUT", "Bars:" + (string)barsOpen);
          return true;
       }
    }
@@ -612,12 +615,23 @@ void CS6Trader::WriteTradesToCSV()
       }
 
       double durDays = (entryDt > 0) ? (double)(exitDt - entryDt) / 86400.0 : 0;
+
+      // Conta le barre D1 effettive (sedute di borsa) per classificare TIMEOUT.
+      // iBarShift: shift più alto = barra più vecchia; barsHeld = entryShift - exitShift.
+      int barsHeld = 0;
+      if(entryDt > 0)
+      {
+         int shiftEntry = iBarShift(_Symbol, PERIOD_D1, entryDt, false);
+         int shiftExit  = iBarShift(_Symbol, PERIOD_D1, exitDt,  false);
+         barsHeld = shiftEntry - shiftExit;
+      }
+
       string reason  = HistoryDealGetString(exitTkt, DEAL_COMMENT);
       if(reason == "" || reason == "S6 entry")
       {
          if((ENUM_DEAL_REASON)HistoryDealGetInteger(exitTkt, DEAL_REASON) == DEAL_REASON_SL)
             reason = "SL";
-         else if(durDays >= _MaxDays - 0.5)
+         else if(barsHeld >= _MaxDays)
             reason = "TIMEOUT";
          else
             reason = "RSI_EXIT";
